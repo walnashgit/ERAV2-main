@@ -1,8 +1,7 @@
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 from torchsummary import summary
-from Util.CIFAR10DataSet import CIFAR10AlbumenationDataSet
-from Util.main import *
+from ERAV2_main.main import *
 from torch_lr_finder import LRFinder
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,6 +9,22 @@ from pytorch_grad_cam import GradCAM, HiResCAM, ScoreCAM, GradCAMPlusPlus, Ablat
 from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
 from pytorch_grad_cam.utils.image import show_cam_on_image
 from torchvision import datasets, transforms
+import torchvision
+
+
+class CIFAR10AlbumenationDataSet(torchvision.datasets.CIFAR10):
+    def __init__(self, root: str, train=True, download=True, transform=None):
+        super().__init__(root=root, train=train, download=download, transform=transform)
+
+    def __getitem__(self, index):
+        image, label = self.data[index], self.targets[index]
+
+        if self.transform is not None:
+            transformed = self.transform(image=image)
+            image = transformed["image"]
+
+        return image, label
+
 
 
 class CIFAR10ResNetUtil:
