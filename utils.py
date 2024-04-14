@@ -15,6 +15,20 @@ mean = (0.4914, 0.4822, 0.4465)
 std_dev = (0.2471, 0.2435, 0.2616)
 
 
+class CIFAR10AlbumenationDataSet(torchvision.datasets.CIFAR10):
+    def __init__(self, root: str, train=True, download=True, transform=None):
+        super().__init__(root=root, train=train, download=download, transform=transform)
+
+    def __getitem__(self, index):
+        image, label = self.data[index], self.targets[index]
+
+        if self.transform is not None:
+            transformed = self.transform(image=image)
+            image = transformed["image"]
+
+        return image, label
+        
+
 class CIFAR10ResNetUtil:
 
     def __init__(self, seed=1):
