@@ -48,14 +48,14 @@ class CIFAR10ResNetUtil:
 
     def get_test_transform_cifar10_resnet(self):
         return A.Compose([
-            A.Normalize((0.4914, 0.4822, 0.4465), (0.2471, 0.2435, 0.2616)),
+            A.Normalize(mean, std_dev),
             ToTensorV2()
         ])
 
     def get_test_transform_cifar10_resnet_2(self):
         return transforms.Compose([
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            transforms.Normalize(mean=mean, std=std_dev),
         ])
 
     def get_train_set_cifar10(self, train_transforms=None):
