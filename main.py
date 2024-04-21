@@ -5,7 +5,6 @@ train_losses = []
 test_losses = []
 train_acc = []
 test_acc = []
-missclassified_images = []
 
 
 def train(model, device, train_loader, optimizer, epoch, criterion):
@@ -48,7 +47,7 @@ def train(model, device, train_loader, optimizer, epoch, criterion):
         train_acc.append(100 * correct / processed)
 
 
-def test(model, device, test_loader, epoch, EPOCHS, collect_images, criterion):
+def test(model, device, test_loader, criterion):
     model.eval()
     test_loss = 0
     correct = 0
@@ -66,11 +65,6 @@ def test(model, device, test_loader, epoch, EPOCHS, collect_images, criterion):
 
             pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
             correct += pred.eq(target.view_as(pred)).sum().item()
-            # find miss-classified images in last epoch
-            if collect_images and epoch == EPOCHS - 1:
-                misclassified_indices = (pred != target.view_as(pred)).nonzero()[:, 0]
-                for idx in misclassified_indices:
-                    missclassified_images.append((data[idx].cpu(), target[idx].cpu(), pred[idx].cpu()))
 
     test_loss /= len(test_loader.dataset)
     test_losses.append(test_loss)
@@ -80,5 +74,3 @@ def test(model, device, test_loader, epoch, EPOCHS, collect_images, criterion):
         100. * correct / len(test_loader.dataset)))
 
     test_acc.append(100. * correct / len(test_loader.dataset))
-
-
