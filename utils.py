@@ -127,7 +127,7 @@ class CIFAR10ResNetUtil:
         return img
 
     @staticmethod
-    def start_training_testing(epochs, collect_images, model, device, train_loader,
+    def start_training_testing(epochs, model, device, train_loader,
                                test_loader, optimizer, criterion, scheduler=None):
         model = model.to(device)
         for epoch in range(epochs):
@@ -136,10 +136,7 @@ class CIFAR10ResNetUtil:
             train(model, device, train_loader, optimizer, epoch, criterion)
             if scheduler is not None:
                 scheduler.step()
-            test(model, device, test_loader, epoch, epochs, collect_images, criterion)
-
-    def plot_miss_classified_images(self, train_set, num_images=10):
-        self.plot_images(train_set, missclassified_images, num_images, False)
+            test(model=model, device=device, test_loader=test_loader, criterion=criterion)
 
     def plot_images(self, train_set, images, num_images=10, true_image=True):
         fig = plt.figure(figsize=(5, 5))
@@ -180,7 +177,7 @@ class CIFAR10ResNetUtil:
         if self.use_mps:
             plt.show()
 
-    def show_grad_cam_heatmap(self, model, train_set, images=missclassified_images, num_images=10):
+    def show_grad_cam_heatmap(self, model, train_set, images, num_images=10):
         target_layers = [model.layer4[-1]]
 
         fig = plt.figure(figsize=(8, 8))
@@ -214,4 +211,42 @@ class CIFAR10ResNetUtil:
             ax.axis('off')
 
         plt.show()
+
+    def get_misclassified_images(self, model, device, test_loader):
+        """
+        Function to run the model on test set and return misclassified images
+        :param model: Network Architecture
+        :param device: CPU/GPU
+        :param test_loader: DataLoader for test set
+        """
+        # Prepare the model for evaluation i.e. drop the dropout layer
+        model.eval()
+
+        # List to store misclassified Images
+        misclassified_data = []
+
+        # Reset the gradients
+        with torch.no_grad():
+            # Extract images, labels in a batch
+            for data, target in test_loader:
+
+                # Migrate the data to the device
+                data, target = data.to(device), target.to(device)
+
+                # Extract single image, label from the batch
+                for image, label in zip(data, target):
+
+                    # Add batch dimension to the image
+                    image = image.unsqueeze(0)
+
+                    # Get the model prediction on the image
+                    output = model(image)
+
+                    # Convert the output from one-hot encoding to a value
+                    pred = output.argmax(dim=1, keepdim=True)
+
+                    # If prediction is incorrect, append the data
+                    if pred != label:
+                        misclassified_data.append((image, label, pred))
+        return misclassified_data
 
