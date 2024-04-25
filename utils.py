@@ -220,7 +220,7 @@ class CIFAR10ResNetUtil:
         :param test_loader: DataLoader for test set
         """
         model = model.to(device)
-        
+
         # Prepare the model for evaluation i.e. drop the dropout layer
         model.eval()
 
@@ -249,6 +249,6 @@ class CIFAR10ResNetUtil:
 
                     # If prediction is incorrect, append the data
                     if pred != label:
-                        misclassified_data.append((image, label, pred))
+                        misclassified_data.append((image.squeeze(0).cpu(), label.cpu(), pred.cpu()))
         return misclassified_data
 
