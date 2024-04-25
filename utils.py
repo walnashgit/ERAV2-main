@@ -219,6 +219,8 @@ class CIFAR10ResNetUtil:
         :param device: CPU/GPU
         :param test_loader: DataLoader for test set
         """
+        model = model.to(device)
+        
         # Prepare the model for evaluation i.e. drop the dropout layer
         model.eval()
 
