@@ -181,8 +181,8 @@ class CIFAR10ResNetUtil:
         if self.use_mps:
             plt.show()
 
-    def show_grad_cam_heatmap(self, model, train_set, images, num_images=10):
-        target_layers = [model.layer4[-1]]
+    def show_grad_cam_heatmap(self, model, train_set, images, num_images=10, layer=-1):
+        target_layers = [model.layer4[layer]]
 
         fig = plt.figure(figsize=(8, 8))
         fig.subplots_adjust(wspace=0.8, hspace=0.8)
@@ -216,14 +216,15 @@ class CIFAR10ResNetUtil:
 
         plt.show()
 
-    def get_misclassified_images(self, model, device, test_loader):
+    def get_misclassified_images(self, model, test_loader, device=None):
         """
         Function to run the model on test set and return misclassified images
         :param model: Network Architecture
         :param device: CPU/GPU
         :param test_loader: DataLoader for test set
         """
-        model = model.to(device)
+        if device is not None:
+            model = model.to(device)
 
         # Prepare the model for evaluation i.e. drop the dropout layer
         model.eval()
@@ -237,7 +238,10 @@ class CIFAR10ResNetUtil:
             for data, target in test_loader:
 
                 # Migrate the data to the device
-                data, target = data.to(device), target.to(device)
+                if device is not None:
+                    data, target = data.to(device), target.to(device)
+                else:
+                    data, target = data, target
 
                 # Extract single image, label from the batch
                 for image, label in zip(data, target):
@@ -255,3 +259,4 @@ class CIFAR10ResNetUtil:
                     if pred != label:
                         misclassified_data.append((image.squeeze(0).cpu(), label.cpu(), pred.cpu()))
         return misclassified_data
+
