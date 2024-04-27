@@ -37,11 +37,12 @@ class BasicBlock(LightningModule):
 
 
 class ResNet(LightningModule):
-    def __init__(self, block, num_blocks, num_classes=10):
+    def __init__(self, block, num_blocks, lr_finder=True, num_classes=10):
         super(ResNet, self).__init__()
         self.cifar_train = None
         self.cifar_val = None
         self.cifar_test = None
+        self.with_lr_finder = lr_finder
 
         self.util = CIFAR10ResNetUtil()
         self.criterion = nn.CrossEntropyLoss()
@@ -107,27 +108,30 @@ class ResNet(LightningModule):
         self.validation_step(test_batch, batch_idx)
 
     def configure_optimizers(self):
-        optimizer = optim.Adam(self.parameters(), lr=1e-10, weight_decay=1e-2)
-        lr = self.util.find_lr_fastai(self, None, self.train_dataloader(), self.criterion, optimizer)
-        scheduler = optim.lr_scheduler.OneCycleLR(
-            optimizer,
-            max_lr=lr,
-            steps_per_epoch=len(self.train_dataloader()),
-            epochs=self.trainer.max_epochs,
-            pct_start=.3,
-            div_factor=100,
-            three_phase=False,
-            final_div_factor=100,
-            anneal_strategy='linear'
-        )
-        return {
-            "optimizer": optimizer,
-            "lr_scheduler": {
-                "scheduler": scheduler,
-                'interval': 'step',  # or 'epoch'
-                'frequency': 1
-            },
-        }
+        if self.with_lr_finder:
+            optimizer = optim.Adam(self.parameters(), lr=1e-10, weight_decay=1e-2)
+            lr = self.util.find_lr_fastai(self, None, self.train_dataloader(), self.criterion, optimizer)
+            scheduler = optim.lr_scheduler.OneCycleLR(
+                optimizer,
+                max_lr=lr,
+                steps_per_epoch=len(self.train_dataloader()),
+                epochs=self.trainer.max_epochs,
+                pct_start=.3,
+                div_factor=100,
+                three_phase=False,
+                final_div_factor=100,
+                anneal_strategy='linear'
+            )
+            return {
+                "optimizer": optimizer,
+                "lr_scheduler": {
+                    "scheduler": scheduler,
+                    'interval': 'step',  # or 'epoch'
+                    'frequency': 1
+                },
+            }
+        optimizer = optim.Adam(self.parameters(), lr=0.001, weight_decay=1e-2)
+        return optimizer
 
     def prepare_data(self):
         CIFAR10AlbumenationDataSet('../data', train=True, download=True)
@@ -153,10 +157,18 @@ class ResNet(LightningModule):
     def val_dataloader(self):
         return self.util.get_data_loader_cifar10(self.cifar_test)
 
+    def display_miss_classified_images(self):
+        images = self.util.get_misclassified_images(self, test_loader=self.test_dataloader())
+        self.util.plot_images(self.cifar_test, images, true_image=False)
+        return images
 
-def ResNet18():
-    return ResNet(BasicBlock, [2, 2, 2, 2])
+    def display_gradcam(self, images, layer):
+        self.util.show_grad_cam_heatmap(self, train_set=self.cifar_train, images=images, layer=layer)
 
 
-def ResNet34():
-    return ResNet(BasicBlock, [3, 4, 6, 3])
+def ResNet18(with_lr_finder=True):
+    return ResNet(BasicBlock, [2, 2, 2, 2], lr_finder=with_lr_finder)
+
+
+def ResNet34(with_lr_finder=True):
+    return ResNet(BasicBlock, [3, 4, 6, 3], lr_finder=with_lr_finder)
