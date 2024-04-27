@@ -83,16 +83,16 @@ class CIFAR10ResNetUtil:
             test_transforms = self.get_test_transform_cifar10_resnet()
         return CIFAR10AlbumenationDataSet('../data', train=False, download=True, transform=test_transforms)
 
-    def get_data_loader_args(self):
-        dataloader_args = dict(shuffle=True, batch_size=512)
+    def get_data_loader_args(self, batch_size = 256):
+        dataloader_args = dict(shuffle=True, batch_size=batch_size)
         if self.cuda:
-            dataloader_args = dict(shuffle=True, batch_size=512, num_workers=2, pin_memory=True)
+            dataloader_args = dict(shuffle=True, batch_size=batch_size, num_workers=2, pin_memory=True)
         elif self.use_mps:
-            dataloader_args = dict(shuffle=True, batch_size=512, pin_memory=True)
+            dataloader_args = dict(shuffle=True, batch_size=batch_size, pin_memory=True)
         return dataloader_args
 
-    def get_data_loader_cifar10(self, data_set):
-        dataloader_args = self.get_data_loader_args()
+    def get_data_loader_cifar10(self, data_set, batch_size=512):
+        dataloader_args = self.get_data_loader_args(batch_size)
         return torch.utils.data.DataLoader(data_set, **dataloader_args)
 
     def get_available_device(self):
@@ -109,10 +109,14 @@ class CIFAR10ResNetUtil:
         summary(model, input_size=(3, 32, 32))
 
     def find_lr_fastai(self, model, device, train_loader, criterion, optimizer):
-        lr_finder = LRFinder(model, optimizer, criterion, device=device)
+        if device is None:
+            lr_finder = LRFinder(model, optimizer, criterion)
+        else:
+            lr_finder = LRFinder(model, optimizer, criterion, device=device)
         lr_finder.range_test(train_loader, end_lr=100, num_iter=100, step_mode="exp")
+        lr = lr_finder.plot()[-1]
         lr_finder.reset()
-        return lr_finder.plot()[-1]
+        return lr
 
     def find_lr_leslie_smith(self, model, device, train_loader, test_loader, criterion, optimizer):
         lr_finder = LRFinder(model, optimizer, criterion, device=device)
@@ -251,4 +255,3 @@ class CIFAR10ResNetUtil:
                     if pred != label:
                         misclassified_data.append((image.squeeze(0).cpu(), label.cpu(), pred.cpu()))
         return misclassified_data
-
