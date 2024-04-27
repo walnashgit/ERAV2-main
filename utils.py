@@ -240,8 +240,6 @@ class CIFAR10ResNetUtil:
                 # Migrate the data to the device
                 if device is not None:
                     data, target = data.to(device), target.to(device)
-                else:
-                    data, target = data, target
 
                 # Extract single image, label from the batch
                 for image, label in zip(data, target):
