@@ -3,6 +3,7 @@ import torch.nn.functional as F
 from pytorch_lightning import LightningModule
 import torch.optim as optim
 from torchmetrics import Accuracy
+from torch.utils.data import random_split
 
 from ERAV2_main.utils import CIFAR10ResNetUtil
 from ERAV2_main.utils import CIFAR10AlbumenationDataSet
@@ -141,8 +142,9 @@ class ResNet(LightningModule):
         # Assign train/val datasets for use in dataloaders
         print('stage: ', stage)
         # if stage == "fit" or stage is None:
-        self.cifar_train = CIFAR10AlbumenationDataSet('../data', train=True,
+        full_cifar = CIFAR10AlbumenationDataSet('../data', train=True,
                                                                           transform=self.trainTransform)
+        self.cifar_train, self.cifar_val = random_split(full_cifar, [0.7, 0.3])
 
         # Assign test dataset for use in dataloader(s)
         # if stage == "test" or stage is None:
@@ -155,7 +157,7 @@ class ResNet(LightningModule):
         return self.util.get_data_loader_cifar10(self.cifar_test)
 
     def val_dataloader(self):
-        return self.util.get_data_loader_cifar10(self.cifar_test)
+        return self.util.get_data_loader_cifar10(self.cifar_val)
 
     def display_miss_classified_images(self):
         images = self.util.get_misclassified_images(self, test_loader=self.test_dataloader())
