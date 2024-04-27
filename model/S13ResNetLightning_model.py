@@ -81,7 +81,15 @@ class ResNet(LightningModule):
 
     def training_step(self, batch, batch_idx):
         data, target = batch
-        return self.criterion(self(data), target)
+        output = self(data)
+        train_loss = self.criterion(output, target)
+        predication = output.argmax(dim=1)
+        self.accuracy(predication, target)
+
+        self.log("train_loss", train_loss, prog_bar=True)
+        self.log("train_acc", self.accuracy, prog_bar=True)
+
+        return train_loss
 
     def validation_step(self, batch, batch_idx):
         data, target = batch
@@ -100,10 +108,10 @@ class ResNet(LightningModule):
 
     def configure_optimizers(self):
         optimizer = optim.Adam(self.parameters(), lr=1e-10, weight_decay=1e-2)
-        # lr = self.util.find_lr_fastai(self, None, self.train_dataloader(), self.criterion, optimizer)
+        lr = self.util.find_lr_fastai(self, None, self.train_dataloader(), self.criterion, optimizer)
         scheduler = optim.lr_scheduler.OneCycleLR(
             optimizer,
-            max_lr=0.001,  # lr,
+            max_lr=lr,
             steps_per_epoch=len(self.train_dataloader()),
             epochs=self.trainer.max_epochs,
             pct_start=.3,
