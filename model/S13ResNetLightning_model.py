@@ -160,7 +160,7 @@ class ResNet(LightningModule):
         return self.util.get_data_loader_cifar10(self.cifar_val)
 
     def display_miss_classified_images(self):
-        images = self.util.get_misclassified_images(self, test_loader=self.test_dataloader())
+        images = self.util.get_misclassified_images(self, test_loader=self.val_dataloader())
         self.util.plot_images(self.cifar_test, images, true_image=False)
         return images
 
